@@ -14,11 +14,12 @@ def get_file_name(qrs_list: list[dict]) -> str:
     return f'{qrs_names_list[0].rstrip(".png")[-6:]}-{qrs_names_list[-1].rstrip(".png")[-6:]}'
 
 
-def zip_repack(qr_nums: int):
+def zip_repack(qr_nums: int) -> tuple[bytes, str]:
 
     buffer = io.BytesIO()
     result = ZipFile(buffer, "w")
-    result.mkdir('images')
+    dir_name = 'PW ID в PNG'
+    result.mkdir(dir_name)
     try:
         qrs = get_images_from_server(qr_nums)
         file_name = get_file_name(qrs)
@@ -31,14 +32,11 @@ def zip_repack(qr_nums: int):
     logger.info(f'Создан файл {file_name}.csv')
 
     for qr in qrs:
-        result.writestr(f'images/{qr["name"]}', qr['data'])
+        result.writestr(f'{dir_name}/{qr["name"]}', qr['data'])
     result.writestr(f'{file_name}.pdf', pdf)
     result.writestr(f'{file_name}.csv', csv)
     result.close()
     logger.info(f'Архив {file_name}.zip создан')
-    with open(f'{file_name}.zip', 'wb') as f:
-        buffer.seek(0)
-        f.write(buffer.read())
     return buffer.getvalue(), file_name
 
 
@@ -55,7 +53,9 @@ if __name__ == '__main__':
                        'Выберите действие: ')
         if choice == '1':
             qr_nums = int(input('Введите количество идентификаторов: '))
-            zip_repack(qr_nums)
+            res = zip_repack(qr_nums)
+            with open(f'{res[1]}.zip', 'wb') as f:
+                f.write(res[0])
         elif choice == '2':
             print(get_qr_nums())
         elif choice == '3':
